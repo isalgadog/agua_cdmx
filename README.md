@@ -1,6 +1,9 @@
 # Agua CDMX
 
-> **Nota metodológica sobre temporalidad de los datos.** El análisis integra datos de consumo de agua correspondientes a **2019** con datos de hogares por colonia correspondientes a **2020**. Aunque no pertenecen exactamente al mismo año calendario, esta diferencia no afecta de manera sustantiva la validez del ejercicio. En este proyecto, `Sum_TotHog` se usa como una variable estructural de carácter demográfico-territorial, por lo que un desfase de un año introduce un error comparativamente pequeño frente a otras fuentes de variación más relevantes, como infraestructura, fugas, actividad económica o heterogeneidad urbana.
+Iván Salgado García
+Maestría en gestión de tecnologías de la información
+Universidad Tecmilenio
+Profesor: Marco Antonio Ramírez Escamilla
 
 ## Descripción del problema
 
@@ -131,6 +134,35 @@ El notebook `agua_cdmx_pca.ipynb` permitió pasar de una base de consumo desagre
 Los resultados muestran que la combinación de `tot_hog`, `nivel_promedio_ponderado` y `diversidad_shannon` contiene señal útil para predecir `consumo_total`, pero no suficiente para explicar por completo el fenómeno. Entre los modelos probados, **KNN** fue el mejor con las variables actuales, lo que sugiere que el consumo de agua responde a patrones de similitud territorial más complejos que una simple relación lineal.
 
 La principal implicación analítica es que el proyecto ya cuenta con una base sólida para una segunda etapa. El siguiente salto en desempeño probablemente no vendrá sólo de cambiar de algoritmo, sino de agregar variables sobre densidad, uso de suelo, actividad económica, infraestructura hidráulica, fugas, clima y características territoriales más finas.
+
+## Acciones estratégicas derivadas de los hallazgos
+
+### 1. Priorizar la segmentación territorial para la gestión de la demanda
+
+Los resultados muestran que el consumo no depende únicamente del número de hogares, sino también de la composición socioeconómica y de la heterogeneidad interna de cada colonia. En términos organizacionales, esto implica que no conviene diseñar políticas de gestión del agua bajo un enfoque uniforme para toda la ciudad. Una primera acción estratégica sería usar la tabla final por colonia y los componentes del PCA para clasificar territorios con perfiles similares de consumo y estructura social.
+
+Aplicación organizacional:
+- Construir tipologías operativas de colonias para planeación.
+- Diseñar intervenciones diferenciadas por perfil territorial, en lugar de campañas generales.
+- Asignar metas, monitoreo y seguimiento por segmentos comparables de colonias.
+
+### 2. Fortalecer la planeación operativa con un modelo predictivo base
+
+El mejor desempeño lo obtuvo `KNeighborsRegressor`, lo que indica que la predicción mejora cuando se comparan colonias con características similares. Aunque el modelo todavía no explica todo el fenómeno, sí puede funcionar como una herramienta base para estimar consumos esperados y detectar desvíos relevantes. Estratégicamente, esto permite pasar de una lectura descriptiva a una lógica de monitoreo preventivo.
+
+Aplicación organizacional:
+- Usar el modelo como línea base para estimar consumo esperado por colonia.
+- Identificar colonias con consumos observados muy por encima o por debajo de lo predicho.
+- Canalizar revisiones técnicas, operativas o comerciales hacia esos casos atípicos antes de que el problema escale.
+
+### 3. Institucionalizar una agenda de enriquecimiento de datos
+
+El valor de `R2 = 0.37` sugiere que las variables actuales contienen señal útil, pero todavía insuficiente para una predicción robusta. El hallazgo estratégico más importante es que la organización necesita integrar nuevas capas de información si quiere mejorar su capacidad analítica y de decisión. El siguiente paso no es sólo ajustar mejor el algoritmo, sino construir una base de datos más rica y más conectada con la realidad operativa del sistema hídrico.
+
+Aplicación organizacional:
+- Integrar variables de infraestructura, fugas, presión, tandeo, uso de suelo y actividad económica.
+- Coordinar áreas técnicas, territoriales y de datos para consolidar una base única por colonia.
+- Convertir esta integración en una rutina institucional de actualización periódica para que el modelo evolucione con el tiempo.
 
 ## Referencias
 
