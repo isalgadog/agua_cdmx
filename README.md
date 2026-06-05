@@ -1,135 +1,136 @@
 # Agua CDMX
 
-> **Nota metodológica sobre temporalidad de los datos.** El análisis integra datos de consumo de agua correspondientes a **2019** con datos de hogares por colonia correspondientes a **2020**. Aunque no pertenecen exactamente al mismo año calendario, esta diferencia no afecta de manera sustantiva la validez del ejercicio. La razón es que `Sum_TotHog` funciona aquí como una variable estructural de orden demográfico-territorial, no como una medida altamente volátil en el corto plazo. En un horizonte de un año, la distribución espacial de hogares por colonia en la CDMX tiende a cambiar de forma gradual y no abrupta, por lo que el error introducido por este desfase temporal es, para fines analíticos, **despreciable** frente a otras fuentes de variación mucho más relevantes, como la heterogeneidad en usos del suelo, infraestructura, fugas o patrones de consumo. En otras palabras, el desfase existe y debe transparentarse, pero no altera la lectura principal del modelo ni invalida la comparación territorial planteada.
+> **Nota metodológica sobre temporalidad de los datos.** El análisis integra datos de consumo de agua correspondientes a **2019** con datos de hogares por colonia correspondientes a **2020**. Aunque no pertenecen exactamente al mismo año calendario, esta diferencia no afecta de manera sustantiva la validez del ejercicio. En este proyecto, `Sum_TotHog` se usa como una variable estructural de carácter demográfico-territorial, por lo que un desfase de un año introduce un error comparativamente pequeño frente a otras fuentes de variación más relevantes, como infraestructura, fugas, actividad económica o heterogeneidad urbana.
 
 ## Descripción del problema
 
-La Ciudad de México enfrenta una problemática hídrica compleja que combina presión demográfica, desigualdad territorial, infraestructura envejecida, fugas, variación en patrones de consumo y vulnerabilidad en las fuentes de abastecimiento. Durante 2024, la discusión pública sobre la crisis del agua se intensificó por los niveles críticamente bajos del Sistema Cutzamala, el temor al llamado “día cero” y la evidencia de que el acceso al agua no se distribuye de manera homogénea en toda la ciudad. En este contexto, entender cómo se comporta el consumo de agua a escala territorial no es sólo un ejercicio técnico o académico, sino una pregunta relevante para la planeación urbana, la gestión pública y la toma de decisiones basada en datos.
+La Ciudad de México enfrenta una problemática hídrica compleja en la que el consumo de agua no depende únicamente del tamaño poblacional, sino también de la composición socioeconómica, la estructura territorial y la heterogeneidad interna de cada colonia. En este contexto, el proyecto busca construir una base analítica a escala de colonia que permita resumir y modelar el consumo total de agua a partir de variables relativamente compactas e interpretables.
 
-Este proyecto parte de una pregunta concreta: **¿es posible predecir el gasto total de agua por colonia utilizando únicamente el número de hogares de esa colonia?** La pregunta es metodológicamente útil porque pone a prueba el alcance de una variable simple, accesible y fácilmente interpretable. Si el número de hogares explicara de manera razonable el consumo total, podría funcionar como una base preliminar para estimaciones rápidas de demanda. Sin embargo, si su capacidad explicativa resulta limitada, entonces quedaría claro que el fenómeno depende también de otros factores, como la mezcla de usos del suelo, la densidad construida, el nivel socioeconómico, la actividad comercial, las fugas o las diferencias de infraestructura entre zonas.
+Además del número de hogares, este análisis incorpora dos indicadores sintetizados a partir de la distribución del consumo por nivel socioeconómico: `nivel_promedio_ponderado` y `diversidad_shannon`. Con estas variables se construye una tabla final por colonia, se aplica un Análisis de Componentes Principales (PCA) para resumir la estructura conjunta de los datos y, finalmente, se comparan tres modelos predictivos para estimar `consumo_total`.
 
-Para responder esta pregunta, el análisis integra datos abiertos de consumo histórico de agua con información territorial de hogares por colonia en la CDMX. A partir de esa integración, se construye una base analítica comparable a nivel colonia-semestre, que permite realizar limpieza, exploración estadística, visualización y modelado. El objetivo no es solamente ajustar una regresión, sino evaluar con rigor hasta dónde puede llegar una explicación basada en una sola variable y qué tan útil resulta como aproximación inicial frente a un problema urbano mucho más heterogéneo de lo que una relación lineal simple podría capturar.
+El flujo analítico principal quedó documentado en el notebook [agua_cdmx_pca.ipynb](agua_cdmx_pca.ipynb), que además ahora exporta automáticamente sus visualizaciones a la carpeta [graficas_pca](graficas_pca).
 
 ## Tablas de variables por dataset
 
 ### 1. Dataset original de consumo histórico de agua
 
-| Variable | Tipo | Rango / valores observados | Valores faltantes |
-|---|---|---|---:|
-| `fecha_referencia` | object | 3 valores; ej.: 2019-06-30, 2019-02-28, 2019-04-30 | 0 |
-| `anio` | int64 | 2019.0000 a 2019.0000 | 0 |
-| `bimestre` | int64 | 1.0000 a 3.0000 | 0 |
-| `consumo_total` | float64 | 0.0000 a 119,726.9400 | 0 |
-| `consumo_total_dom` | float64 | 0.0000 a 95,060.6900 | 4820 |
-| `consumo_total_no_dom` | float64 | 0.0000 a 119,726.9400 | 0 |
-| `indice_des` | object | 4 valores; ej.: ALTO, MEDIO, POPULAR | 0 |
-| `colonia` | object | 1494 valores; ej.: 7 DE NOVIEMBRE, GERTRUDIS SANCHEZ 3A SECCION, PRO HOGAR I | 216 |
-| `alcaldia` | object | 16 valores; ej.: GUSTAVO A. MADERO, AZCAPOTZALCO, COYOACAN | 216 |
-| `latitud` | float64 | 19.1359 a 19.5791 | 0 |
-| `longitud` | float64 | -99.3377 a -98.9505 | 0 |
-
-> Nota: esta tabla resume las variables centrales del archivo fuente utilizadas para la integración, limpieza y análisis posterior.
+| Variable | Tipo | Uso en el proyecto |
+|---|---|---|
+| `fecha_referencia` | Fecha | Referencia temporal del consumo observado |
+| `anio` | Entero | Identificación anual |
+| `bimestre` | Entero | Identificación bimestral previa al colapso |
+| `consumo_total` | Numérica | Variable de consumo agregada de interés |
+| `indice_des` | Categórica | Nivel socioeconómico asociado al registro |
+| `colonia` | Texto | Unidad territorial base |
+| `alcaldia` | Texto | Unidad territorial complementaria para llave |
 
 ### 2. Dataset territorial de hogares por colonia
 
-| Variable | Tipo | Rango / valores observados | Valores faltantes |
-|---|---|---|---:|
-| `FID_1` | int64 | 0.0000 a 1,813.0000 | 0 |
-| `cve_ent` | object | 1 valores; ej.: 09 | 0 |
-| `alcaldia` | object | 16 valores; ej.: AZCAPOTZALCO, BENITO JUAREZ, GUSTAVO A. MADERO | 0 |
-| `cve_col` | object | 1814 valores; ej.: 02-001, 02-002, 02-005 | 0 |
-| `colonia` | object | 1743 valores; ej.: AGUILERA, ALDANA, ANGEL ZIMBRON | 0 |
-| `VivHab2010` | int64 | 0.0000 a 7,066.0000 | 0 |
-| `VivHab2020` | int64 | 0.0000 a 8,041.0000 | 0 |
-| `Area_ha` | float64 | 0.1414 a 1,185.7193 | 0 |
-| `DenViv10` | float64 | 0.0000 a 419.1327 | 0 |
-| `DenViv20` | float64 | 0.0000 a 554.4223 | 0 |
-| `Sum_TotHog` | float64 | 0.0000 a 104,459.0000 | 0 |
+| Variable | Tipo | Uso en el proyecto |
+|---|---|---|
+| `cve_col` | Texto | Clave territorial de apoyo para cruces |
+| `colonia` | Texto | Nombre de colonia |
+| `alcaldia` | Texto | Nombre de alcaldía |
+| `Sum_TotHog` | Numérica | Total de hogares por colonia |
+| `Area_ha` | Numérica | Variable territorial disponible, no usada en esta versión |
+| `DenViv20` | Numérica | Densidad de vivienda disponible, no usada en esta versión |
 
-### 3. Dataset semestral filtrado para análisis y modelado
+### 3. Dataset final para PCA y modelado
 
-| Variable | Tipo | Rango / valores observados | Valores faltantes |
-|---|---|---|---:|
-| `alcaldia` | object | 16 valores; ej.: ALVARO OBREGON, AZCAPOTZALCO, BENITO JUAREZ | 0 |
-| `colonia` | object | 1467 valores; ej.: 19 DE MAYO, 1RA VICTORIA, 1RA VICTORIA SECCION BOSQUES | 0 |
-| `cve_col` | object | 1519 valores; ej.: 10-241, 10-242, 10-243 | 0 |
-| `Sum_TotHog` | float64 | 30.0000 a 7,923.0000 | 0 |
-| `consumo_total` | float64 | 0.0000 a 1,023,105.0200 | 0 |
+| Variable | Tipo | Interpretación |
+|---|---|---|
+| `colonia_alcaldia` | Texto | Identificador único por colonia y alcaldía |
+| `consumo_total` | Numérica | Consumo total agregado por colonia |
+| `tot_hog` | Numérica | Total de hogares por colonia |
+| `nivel_promedio_ponderado` | Numérica | Resume la composición socioeconómica dominante |
+| `diversidad_shannon` | Numérica | Mide heterogeneidad socioeconómica interna |
+| `PC1`, `PC2`, `PC3`, `PC4` | Numéricas | Componentes principales derivados del PCA |
+
+La tabla limpia final usada para modelado contiene **1,512 colonias**, de las cuales sólo **2** presentan `NaN` en `tot_hog`.
 
 ## Resultados del análisis exploratorio
 
-A partir de la base semestral ya limpia, el análisis exploratorio se concentró en entender la relación entre el tamaño de la colonia, medido por el número de hogares, y el consumo total de agua. Para ello se usaron múltiples visualizaciones que permiten observar correlaciones, tendencias generales, forma de las distribuciones, diferencias entre grupos y zonas donde el modelo falla con mayor claridad. A continuación se resumen cinco visualizaciones clave con su interpretación.
+### 1. Scree plot del PCA sobre la tabla final
 
-### 1. Mapa de calor de correlaciones
+![Scree plot de la tabla final](graficas_pca/01_scree_plot_tabla_final.png)
 
-![Mapa de calor de correlaciones](figures/01_heatmap_correlaciones.png)
+El PCA aplicado sobre la tabla final muestra que la variación no se concentra en un solo eje. `PC1` explica aproximadamente **40%** de la varianza total y `PC2` alrededor de **26%**, de modo que los dos primeros componentes resumen cerca de **66%** de la información. Al incorporar `PC3`, la varianza acumulada sube a **85%**, lo que sugiere que tres componentes bastan para representar de forma razonable la estructura general del conjunto.
 
-El mapa de calor de correlaciones muestra una asociación positiva clara entre `Sum_TotHog` y `consumo_total`, lo que confirma que las colonias con más hogares tienden a concentrar una mayor demanda agregada de agua. Sin embargo, la lectura más fina aparece cuando se incorpora `consumo_total_por_hogar_sem`: la correlación con el número de hogares es considerablemente menor, lo que sugiere que el tamaño poblacional no explica por sí solo la intensidad del consumo. Esta diferencia es importante porque separa dos fenómenos distintos: una cosa es que una colonia grande consuma más agua en total, y otra es que cada hogar dentro de esa colonia consuma sistemáticamente más. En términos sustantivos, la matriz sugiere que el número de hogares sí contiene señal útil para predecir volumen agregado, pero también deja ver que la demanda hídrica depende de otras condiciones territoriales y socioeconómicas que no quedan capturadas por una sola variable demográfica.
+### 2. Proyección de colonias en `PC1` y `PC2`
 
-### 2. Diagrama de dispersión: hogares vs. consumo total
+![Scatter PC1 vs PC2 de la tabla final](graficas_pca/02_scatter_pc1_pc2_tabla_final.png)
 
-![Dispersión entre hogares y consumo total](figures/02_scatter_hogares_consumo.png)
+La proyección en el plano `PC1`-`PC2` permite observar un núcleo amplio de colonias con perfiles relativamente similares y algunos casos claramente alejados del resto. Esto confirma que la base combina un patrón central relativamente estable con observaciones más extremas que conviene revisar antes del modelado.
 
-El diagrama de dispersión entre hogares y consumo total muestra una relación positiva general: conforme aumenta el tamaño de la colonia, también tiende a aumentar el volumen agregado de agua consumido. No obstante, la nube de puntos evidencia una dispersión importante alrededor de esa tendencia. Colonias con cantidades similares de hogares pueden registrar niveles muy distintos de consumo total, lo que revela heterogeneidad territorial y posibles diferencias en mezcla de usos, infraestructura, actividad económica o hábitos de consumo. La línea de tendencia permite visualizar la dirección promedio del vínculo, pero no elimina la variabilidad entre observaciones. Esa tensión entre patrón general y dispersión local es una de las conclusiones más importantes del análisis exploratorio: el tamaño de la colonia ayuda a anticipar la dirección del consumo, pero no ofrece una explicación exhaustiva. En otras palabras, la visualización respalda la idea de que existe señal predictiva, aunque todavía insuficiente para estimaciones finas por sí sola.
+### 3. Cargas del PCA sobre la tabla final
 
-### 3. Histogramas de consumo total y consumo total por hogar
+![Heatmap de cargas de la tabla final](graficas_pca/03_heatmap_cargas_tabla_final.png)
 
-![Histogramas de consumo total y consumo por hogar](figures/03_histogramas_consumo.png)
+Las cargas del PCA muestran cómo se combinan `consumo_total`, `tot_hog`, `nivel_promedio_ponderado` y `diversidad_shannon` dentro de cada componente. En términos sustantivos, los componentes no reflejan una sola variable aislada, sino combinaciones distintas entre tamaño de colonia, intensidad de consumo y composición socioeconómica.
 
-Las distribuciones de `consumo_total` y `consumo_total_por_hogar_sem` muestran una forma asimétrica a la derecha. La mayor parte de las colonias se concentra en niveles relativamente bajos o medios, mientras que un grupo mucho menor alcanza valores considerablemente más altos. Esta asimetría sugiere que el fenómeno no está repartido de manera uniforme y que existen colonias cuyo comportamiento de consumo se aparta con fuerza del resto. La comparación entre ambas distribuciones también ayuda a distinguir entre volumen agregado e intensidad relativa. Mientras el consumo total refleja el tamaño general de la demanda territorial, el consumo por hogar permite ver si ciertas colonias destacan incluso después de ajustar por tamaño. Analíticamente, esto justifica la identificación de casos extremos y la depuración previa al modelado, ya que una pequeña cantidad de observaciones muy altas puede deformar tanto la lectura visual como los coeficientes de un modelo simple si no se tratan con cuidado.
+### 4. Revisión y limpieza de outliers
 
-### 4. Diagrama de caja por cuartiles de hogares
+A partir de reglas IQR y umbrales sustantivos se identificaron observaciones especialmente extremas. En esta etapa se eliminaron **41 colonias**, pasando de **1,553** observaciones iniciales a una `tabla_limpia` de **1,512** colonias. Esta depuración buscó reducir la influencia desproporcionada de casos atípicos sobre el PCA y sobre los modelos predictivos.
 
-![Boxplot por cuartiles de hogares](figures/04_boxplot_cuartiles_hogares.png)
+### 5. Scree plot del PCA sobre la tabla limpia
 
-El boxplot por cuartiles de hogares permite comparar cómo se distribuye el consumo total por hogar entre colonias pequeñas, medianas y grandes. La visualización muestra que la mediana y la dispersión cambian entre grupos, lo que sugiere que la intensidad del consumo no es idéntica a lo largo del continuo de tamaño poblacional. Además, la presencia de puntos extremos dentro de varios cuartiles confirma que no sólo existen diferencias entre grupos, sino también heterogeneidad interna dentro de cada segmento. Esto es relevante porque impide asumir que todas las colonias con tamaños parecidos comparten un mismo patrón de consumo por hogar. La escala logarítmica ayuda a que la comparación sea legible pese a la amplitud de los valores observados. En términos interpretativos, el boxplot refuerza la conclusión de que el número de hogares aporta información valiosa, pero no basta para describir completamente la intensidad del consumo; incluso entre colonias de tamaños semejantes persisten diferencias que exigen variables adicionales para una explicación más robusta.
+![Scree plot de la tabla limpia](graficas_pca/04_scree_plot_tabla_limpia.png)
 
-### 5. Gráfico de residuos del modelo lineal simple
+Después de retirar outliers notorios, el PCA gana algo de capacidad de síntesis. `PC1` explica aproximadamente **46%** de la varianza y `PC2` cerca de **26%**, por lo que los dos primeros componentes concentran ya alrededor de **71%** de la información total. Con tres componentes, la varianza acumulada alcanza cerca de **89%**, lo que sugiere una estructura más estable y más concentrada que en la tabla original.
 
-![Gráfico de residuos del modelo lineal](figures/05_residuos_modelo_lineal.png)
+### 6. Proyección y cargas del PCA sobre la tabla limpia
 
-El gráfico de residuos permite observar con claridad dónde falla más el modelo una vez ajustada la regresión lineal simple. Los puntos por encima de cero representan colonias cuyo consumo observado fue mayor al predicho, es decir, casos en los que el modelo subestima el gasto; los puntos por debajo muestran colonias cuyo consumo fue sobreestimado. Si el ajuste fuera muy bueno, los residuos se distribuirían de forma relativamente compacta alrededor de cero. En cambio, la visualización deja ver una dispersión amplia y patrones de error que no desaparecen en distintos niveles de consumo predicho. Esto indica que el modelo captura una parte de la señal, pero deja una fracción importante sin explicar. La lectura sustantiva es clara: el número de hogares sí funciona como predictor base, pero no agota los determinantes del consumo de agua por colonia. Por tanto, el gráfico de residuos no sólo sirve como diagnóstico estadístico, sino también como evidencia de los límites analíticos del modelo con una sola variable.
+![Scatter PC1 vs PC2 de la tabla limpia](graficas_pca/05_scatter_pc1_pc2_tabla_limpia.png)
 
-### 6. Mapa de desempeño predictivo por colonia en la CDMX
+![Heatmap de cargas de la tabla limpia](graficas_pca/06_heatmap_cargas_tabla_limpia.png)
 
-![Mapa de desempeño predictivo por colonia](figures/06_mapa_desempeno_prediccion_cdmx.png)
-
-El mapa de desempeño predictivo agrega una lectura territorial al análisis y permite identificar en qué colonias el modelo lineal se acerca razonablemente al consumo observado y en cuáles falla por sobreestimación o subestimación. Las colonias en verde representan casos donde la predicción cae dentro de un margen de ±10%, mientras que los tonos naranja y morado muestran desviaciones sistemáticas por debajo o por encima de lo observado. La presencia de zonas grises indica colonias que no fueron incorporadas en el análisis o entrenamiento final, ya sea por exclusión metodológica o porque quedaron fuera de la base depurada. Esta visualización es valiosa porque evidencia que el error del modelo no se distribuye de forma homogénea en la ciudad: hay territorios donde la relación entre hogares y consumo se ajusta mejor al patrón promedio y otros donde factores no observados alteran con más fuerza la predicción. En términos analíticos, el mapa refuerza la idea de que el tamaño de la colonia ayuda a aproximar la demanda, pero no basta para capturar toda la heterogeneidad hídrica de la CDMX.
+Las visualizaciones sobre la tabla limpia confirman que el patrón global se conserva, pero con menos distorsión causada por casos extremos. Esto vuelve más interpretable la estructura de similitudes entre colonias y más consistente la lectura de las cargas por componente.
 
 ## Modelo estadístico con hallazgos
 
-Para responder la pregunta central del proyecto se estimó una **regresión lineal simple** en la que `consumo_total` se modela como función de `Sum_TotHog`. El objetivo fue evaluar si el número de hogares por colonia permite explicar y predecir el gasto total semestral de agua con un nivel razonable de precisión. Sobre la base analítica limpia, el modelo arrojó un **intercepto de 1,934.56** y una **pendiente de 41.82**, lo que implica que, en promedio, cada hogar adicional se asocia con un aumento estimado de 41.82 unidades en el consumo total semestral. Esta relación tiene el signo esperado y confirma que existe una conexión positiva entre tamaño demográfico y volumen agregado de consumo.
+Con la tabla limpia se compararon tres modelos para predecir `consumo_total` usando como variables predictoras `tot_hog`, `nivel_promedio_ponderado` y `diversidad_shannon`:
 
-### Métricas principales del modelo lineal
+- `LinearRegression` como línea base interpretable.
+- `RandomForestRegressor` para capturar relaciones no lineales e interacciones.
+- `KNeighborsRegressor` para explotar similitudes locales entre colonias.
 
-| Métrica | Valor |
-|---|---:|
-| Intercepto | 1,934.56 |
-| Pendiente (`Sum_TotHog`) | 41.82 |
-| R² | 0.2957 |
-| RMSE | 87,121.04 |
-| MAE | 54,670.76 |
-| Observaciones usadas | 1,494 |
+### Métricas comparadas
 
-El valor de **R² = 0.2957** indica que el modelo explica alrededor del 29.6% de la variación observada en el consumo total. Esto significa que el número de hogares sí aporta señal estadística relevante, pero también que más de dos terceras partes de la variación permanecen sin explicar bajo esta especificación. Las métricas de error, en particular RMSE y MAE, muestran que las desviaciones entre valores observados y predichos siguen siendo amplias. Por eso, el hallazgo correcto no es afirmar que el modelo “predice bien” en términos absolutos, sino que funciona como una **aproximación base útil pero limitada**.
+| Métrica | Regresión lineal | Random Forest | KNN |
+|---|---:|---:|---:|
+| `R2` | 0.31 | 0.32 | **0.37** |
+| `MAE` | 51,677.86 | 46,786.76 | **46,374.53** |
+| `RMSE` | 74,572.61 | 73,975.26 | **71,208.84** |
 
-### Comparación con el modelo log-log
+### Visualización de predicción por modelo
 
-Además del modelo lineal en escala original, se probó una especificación **log-log** para explorar si una relación proporcional entre hogares y consumo mejoraba el desempeño. En esa versión, la pendiente estimada fue de **0.7244** y el **R² logarítmico** fue de **0.1133**. Aunque esta formulación permite una lectura interesante en términos de elasticidad, no superó al modelo lineal cuando se comparó su desempeño fuera de muestra.
+#### Regresión lineal
 
-| Métrica en test | Modelo lineal | Modelo log-log |
-|---|---:|---:|
-| RMSE | 75,823.68 | 93,731.35 |
-| MAE | 52,499.66 | 55,430.60 |
-| R² test | 0.3161 | -0.0451 |
+![Predicción con regresión lineal](graficas_pca/07_prediccion_regresion_lineal.png)
 
-La comparación de prueba sugiere que el **modelo lineal generaliza mejor** que el log-log para esta base ya depurada. El modelo lineal obtiene menor error absoluto, menor error cuadrático medio y un R² positivo en test, mientras que el log-log muestra un R² negativo, señal de que su poder predictivo es peor que usar simplemente el promedio observado. En consecuencia, el hallazgo principal es que `Sum_TotHog` sí puede utilizarse como predictor inicial del consumo total, pero no como explicación suficiente del fenómeno. La heterogeneidad territorial, la mezcla de usos del suelo, las fugas, la infraestructura y otros factores no observados siguen desempeñando un papel importante en la demanda hídrica de la CDMX.
+La regresión lineal funciona como un punto de partida claro, pero deja ver una dispersión amplia entre valores observados y predichos. Esto indica que la relación entre las variables seleccionadas y el consumo no puede resumirse bien con una forma estrictamente lineal.
+
+#### Random Forest
+
+![Predicción con Random Forest](graficas_pca/08_prediccion_random_forest.png)
+
+El Random Forest mejora ligeramente frente a la regresión lineal, lo que sugiere que sí hay cierta no linealidad en el problema. Sin embargo, la ganancia es moderada, probablemente porque el número de variables disponibles sigue siendo pequeño.
+
+#### KNeighborsRegressor
+
+![Predicción con KNN](graficas_pca/09_prediccion_knn.png)
+
+El mejor desempeño lo obtuvo `KNeighborsRegressor`, con el mayor `R2` y los menores errores absolutos y cuadráticos. Esto sugiere que, con las variables seleccionadas, el consumo de agua se explica mejor por similitudes locales entre colonias parecidas que por una relación lineal global única.
+
+En términos metodológicos, el hallazgo más importante es que las variables sintetizadas mediante *socioeconomic features* sí aportan señal predictiva adicional frente a usar solamente hogares. Aun así, el valor de `R2 = 0.37` indica que una parte importante de la variación del consumo sigue sin ser explicada, por lo que la mejora de fondo depende más de incorporar nuevas variables que de seguir ajustando el algoritmo actual.
 
 ## Conclusión ejecutiva
 
-El análisis muestra que el número de hogares por colonia sí guarda una relación positiva y consistente con el consumo total semestral de agua en la Ciudad de México. En ese sentido, `Sum_TotHog` funciona como una variable base útil para aproximar la demanda agregada: colonias con más hogares tienden, en promedio, a consumir más agua. Sin embargo, tanto el análisis exploratorio como el modelado estadístico indican que esa relación es insuficiente para explicar con precisión el comportamiento completo del consumo. El modelo lineal simple capta señal real, pero sólo explica una parte limitada de la variación observada y mantiene errores amplios en varias colonias.
+El notebook `agua_cdmx_pca.ipynb` permitió pasar de una base de consumo desagregada por bimestre y nivel socioeconómico a una tabla final compacta por colonia, enriquecida con indicadores socioeconómicos sintéticos y componentes principales. Este proceso hizo posible resumir mejor la estructura territorial del consumo y comparar modelos de predicción con una base más robusta.
 
-La comparación entre modelos también refuerza esta conclusión. Aunque se probó una especificación log-log para explorar una relación proporcional, el modelo lineal mostró mejor desempeño fuera de muestra, con menores errores y un mejor ajuste en test. Esto sugiere que, para esta base depurada, el enfoque lineal es más adecuado como línea base predictiva. Aun así, el hallazgo central no es que el modelo lineal “resuelva” el problema, sino que permite delimitar con claridad sus alcances: el tamaño de la colonia importa, pero no agota la explicación del consumo hídrico. Para avanzar hacia predicciones más robustas sería necesario incorporar variables adicionales, como mezcla de usos del suelo, infraestructura, fugas y diferencias socioeconómicas.
+Los resultados muestran que la combinación de `tot_hog`, `nivel_promedio_ponderado` y `diversidad_shannon` contiene señal útil para predecir `consumo_total`, pero no suficiente para explicar por completo el fenómeno. Entre los modelos probados, **KNN** fue el mejor con las variables actuales, lo que sugiere que el consumo de agua responde a patrones de similitud territorial más complejos que una simple relación lineal.
+
+La principal implicación analítica es que el proyecto ya cuenta con una base sólida para una segunda etapa. El siguiente salto en desempeño probablemente no vendrá sólo de cambiar de algoritmo, sino de agregar variables sobre densidad, uso de suelo, actividad económica, infraestructura hidráulica, fugas, clima y características territoriales más finas.
 
 ## Referencias
 
